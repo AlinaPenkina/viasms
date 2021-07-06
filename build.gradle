@@ -1,0 +1,78 @@
+import io.qameta.allure.gradle.task.AllureReport
+
+allprojects {
+    repositories {
+        jcenter()
+        mavenCentral()
+    }
+}
+
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+    dependencies {
+        classpath "io.qameta.allure:allure-gradle:2.8.1"
+    }
+}
+
+apply plugin: 'io.qameta.allure'
+apply plugin: 'java'
+
+dependencies {
+    compile(
+            'com.codeborne:selenide:5.2.4',
+            'io.qameta.allure:allure-junit4:2.0-BETA19',
+            'com.mashape.unirest:unirest-java:1.4.9',
+            'io.rest-assured:rest-assured:3.3.0',
+
+    )
+}
+
+[compileJava, compileTestJava]*.options.collect { options -> options.encoding = 'UTF-8' }
+[compileJava, compileTestJava]*.options.collect { options -> options.debug = true }
+compileJava.options.debugOptions.debugLevel = "source,lines,vars"
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+allure {
+    version = '2.4.1'
+    aspectjweaver = true
+    autoconfigure = true
+}
+
+tasks.withType(Test) {
+    useJUnit()
+    reports.junitXml.enabled = true
+    reports.html.enabled = false
+    ignoreFailures = false
+    systemProperties = System.properties as Map<String, ?>
+
+}
+
+task uiTest(type: Test) {
+    include "**/TestSuite.class"
+}
+
+task copyEnv(type: Copy) {
+    from 'src/test/resources/dataForAllure/'
+    into 'build/allure-results/'
+}
+
+task copyHistory(type: Copy) {
+    from '../history'
+    into 'build/allure-results/history'
+}
+
+task saveHistory(type: Copy) {
+    from 'build/allure-report/history'
+    into '../history'
+}
+
+task allureGenRep(type: AllureReport) {
+    reportDir = file('build/allure-report')
+}
+
+allureGenRep.dependsOn(copyEnv, copyHistory)
+tasks.withType(Test)*.finalizedBy allureGenRep
