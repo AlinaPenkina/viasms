@@ -17,5 +17,6 @@ public class BaseMethods {
     @Step
     public static void clickButton(SelenideElement element) {
         element.click();
+        Selenide.sleep(5000);
     }
 }
